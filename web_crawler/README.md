@@ -1,2 +1,2 @@
 # Data-Projects
-Repository for selected personal data projects from Kaggle, Coursera and other sources.
+Selected Data Science Projects from Coursera courses
