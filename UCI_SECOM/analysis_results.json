@@ -1,0 +1,427 @@
+{
+  "feature_engineering": {
+    "original_features": 590,
+    "dropped_high_missing": 8,
+    "medium_missing_to_indicators": 16,
+    "dropped_constant": 126,
+    "dropped_correlated": 171,
+    "final_numeric_features": 269,
+    "missingness_indicators": 16,
+    "total_final_features": 285
+  },
+  "cv_results": [
+    {
+      "model": "XGBoost",
+      "resampling": "smote_enn",
+      "f1": 0.2661290322580645,
+      "pr_auc": 0.14754088531243714,
+      "recall": 0.39759036144578314,
+      "precision": 0.2,
+      "threshold": 0.8771832585334778
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "none",
+      "f1": 0.24770642201834864,
+      "pr_auc": 0.1512977646832358,
+      "recall": 0.3253012048192771,
+      "precision": 0.2,
+      "threshold": 0.03624629067320899
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "undersample",
+      "f1": 0.24413145539906103,
+      "pr_auc": 0.14956115099493264,
+      "recall": 0.3132530120481928,
+      "precision": 0.2,
+      "threshold": 0.34221821220443305
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "smote_tomek",
+      "f1": 0.23645320197044334,
+      "pr_auc": 0.14697833800126928,
+      "recall": 0.2891566265060241,
+      "precision": 0.2,
+      "threshold": 0.023953177492018196
+    },
+    {
+      "model": "XGBoost",
+      "resampling": "smote_tomek",
+      "f1": 0.22797927461139897,
+      "pr_auc": 0.1507129754233806,
+      "recall": 0.26506024096385544,
+      "precision": 0.2,
+      "threshold": 0.3274020552635193
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "none",
+      "f1": 0.2185792349726776,
+      "pr_auc": 0.1877950500892136,
+      "recall": 0.24096385542168675,
+      "precision": 0.2,
+      "threshold": 0.2956298026866615
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "smote_tomek",
+      "f1": 0.19631901840490798,
+      "pr_auc": 0.15921384976281863,
+      "recall": 0.1927710843373494,
+      "precision": 0.2,
+      "threshold": 0.3812019051236641
+    },
+    {
+      "model": "XGBoost",
+      "resampling": "none",
+      "f1": 0.189873417721519,
+      "pr_auc": 0.1512164298458222,
+      "recall": 0.18072289156626506,
+      "precision": 0.2,
+      "threshold": 0.27767622470855713
+    },
+    {
+      "model": "XGBoost",
+      "resampling": "undersample",
+      "f1": 0.16783216783216784,
+      "pr_auc": 0.1244002580380213,
+      "recall": 0.14457831325301204,
+      "precision": 0.2,
+      "threshold": 0.5391635298728943
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "smote_enn",
+      "f1": 0.15942028985507245,
+      "pr_auc": 0.1331051528813557,
+      "recall": 0.13253012048192772,
+      "precision": 0.2,
+      "threshold": 0.9940241629828935
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "undersample",
+      "f1": 0.13008130081300814,
+      "pr_auc": 0.1237337516840266,
+      "recall": 0.0963855421686747,
+      "precision": 0.2,
+      "threshold": 0.6513965889072972
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "smote_enn",
+      "f1": 0.13008130081300814,
+      "pr_auc": 0.1326486451550343,
+      "recall": 0.0963855421686747,
+      "precision": 0.2,
+      "threshold": 0.997398945655285
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "smote_enn",
+      "f1": 0.11864406779661017,
+      "pr_auc": 0.13230767325079126,
+      "recall": 0.08433734939759036,
+      "precision": 0.2,
+      "threshold": 0.8648372235890106
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "none",
+      "f1": 0.09259259259259259,
+      "pr_auc": 0.12498614937657423,
+      "recall": 0.060240963855421686,
+      "precision": 0.2,
+      "threshold": 0.9490325766608654
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "smote_tomek",
+      "f1": 0.09259259259259259,
+      "pr_auc": 0.13744311758973057,
+      "recall": 0.060240963855421686,
+      "precision": 0.2,
+      "threshold": 0.7914088637373011
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "undersample",
+      "f1": 0.15676959619952494,
+      "pr_auc": 0.07603265765221984,
+      "recall": 0.7951807228915663,
+      "precision": 0.08695652173913043,
+      "threshold": 0.25088544804800156
+    }
+  ],
+  "test_results": [
+    {
+      "model": "XGBoost",
+      "resampling": "smote_tomek",
+      "f1": 0.27906976744186046,
+      "pr_auc": 0.1666008731206835,
+      "recall": 0.2857142857142857,
+      "precision": 0.2727272727272727,
+      "threshold": 0.3274020552635193
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "undersample",
+      "f1": 0.26666666666666666,
+      "pr_auc": 0.2186923074200677,
+      "recall": 0.38095238095238093,
+      "precision": 0.20512820512820512,
+      "threshold": 0.34221821220443305
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "none",
+      "f1": 0.25,
+      "pr_auc": 0.1812700945207631,
+      "recall": 0.2857142857142857,
+      "precision": 0.2222222222222222,
+      "threshold": 0.03624629067320899
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "none",
+      "f1": 0.21739130434782608,
+      "pr_auc": 0.21090132579955606,
+      "recall": 0.23809523809523808,
+      "precision": 0.2,
+      "threshold": 0.2956298026866615
+    },
+    {
+      "model": "XGBoost",
+      "resampling": "undersample",
+      "f1": 0.21739130434782608,
+      "pr_auc": 0.17749721826990947,
+      "recall": 0.23809523809523808,
+      "precision": 0.2,
+      "threshold": 0.5391635298728943
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "undersample",
+      "f1": 0.1746031746031746,
+      "pr_auc": 0.12645454442765341,
+      "recall": 0.5238095238095238,
+      "precision": 0.10476190476190476,
+      "threshold": 0.25088544804800156
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "smote_tomek",
+      "f1": 0.17391304347826086,
+      "pr_auc": 0.14233789818756407,
+      "recall": 0.19047619047619047,
+      "precision": 0.16,
+      "threshold": 0.023953177492018196
+    },
+    {
+      "model": "XGBoost",
+      "resampling": "none",
+      "f1": 0.16666666666666666,
+      "pr_auc": 0.16752934342496384,
+      "recall": 0.14285714285714285,
+      "precision": 0.2,
+      "threshold": 0.27767622470855713
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "smote_tomek",
+      "f1": 0.16216216216216217,
+      "pr_auc": 0.17987684297874273,
+      "recall": 0.14285714285714285,
+      "precision": 0.1875,
+      "threshold": 0.3812019051236641
+    },
+    {
+      "model": "XGBoost",
+      "resampling": "smote_enn",
+      "f1": 0.13559322033898305,
+      "pr_auc": 0.11959327071435465,
+      "recall": 0.19047619047619047,
+      "precision": 0.10526315789473684,
+      "threshold": 0.8771832585334778
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "smote_enn",
+      "f1": 0.08333333333333333,
+      "pr_auc": 0.20914762995227618,
+      "recall": 0.047619047619047616,
+      "precision": 0.3333333333333333,
+      "threshold": 0.8648372235890106
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "none",
+      "f1": 0.08333333333333333,
+      "pr_auc": 0.1641918160499706,
+      "recall": 0.047619047619047616,
+      "precision": 0.3333333333333333,
+      "threshold": 0.9490325766608654
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "smote_enn",
+      "f1": 0.07407407407407407,
+      "pr_auc": 0.12853782588397278,
+      "recall": 0.047619047619047616,
+      "precision": 0.16666666666666666,
+      "threshold": 0.997398945655285
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "smote_tomek",
+      "f1": 0.07142857142857142,
+      "pr_auc": 0.18873696840116158,
+      "recall": 0.047619047619047616,
+      "precision": 0.14285714285714285,
+      "threshold": 0.7914088637373011
+    },
+    {
+      "model": "LogisticRegression",
+      "resampling": "smote_enn",
+      "f1": 0.06060606060606061,
+      "pr_auc": 0.10954234403508994,
+      "recall": 0.047619047619047616,
+      "precision": 0.08333333333333333,
+      "threshold": 0.9940241629828935
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "undersample",
+      "f1": 0.0,
+      "pr_auc": 0.16635110097319966,
+      "recall": 0.0,
+      "precision": 0.0,
+      "threshold": 0.6513965889072972
+    }
+  ],
+  "top_3": [
+    {
+      "model": "XGBoost",
+      "resampling": "smote_tomek",
+      "threshold": 0.3274020552635193,
+      "pr_auc": 0.1666008731206835,
+      "f1": 0.27906976744186046,
+      "recall": 0.2857142857142857,
+      "precision": 0.2727272727272727
+    },
+    {
+      "model": "RandomForest",
+      "resampling": "undersample",
+      "threshold": 0.34221821220443305,
+      "pr_auc": 0.2186923074200677,
+      "f1": 0.26666666666666666,
+      "recall": 0.38095238095238093,
+      "precision": 0.20512820512820512
+    },
+    {
+      "model": "LightGBM",
+      "resampling": "none",
+      "threshold": 0.03624629067320899,
+      "pr_auc": 0.1812700945207631,
+      "f1": 0.25,
+      "recall": 0.2857142857142857,
+      "precision": 0.2222222222222222
+    }
+  ],
+  "shap_results": {
+    "XGBoost_smote_tomek": {
+      "top_features": [
+        [
+          "33",
+          0.23750050365924835
+        ],
+        [
+          "213",
+          0.22849053144454956
+        ],
+        [
+          "59",
+          0.22460216283798218
+        ],
+        [
+          "419",
+          0.2230522781610489
+        ],
+        [
+          "95",
+          0.21475817263126373
+        ],
+        [
+          "205",
+          0.2078525274991989
+        ],
+        [
+          "486",
+          0.19330477714538574
+        ],
+        [
+          "511",
+          0.19030657410621643
+        ],
+        [
+          "500",
+          0.17242756485939026
+        ],
+        [
+          "519",
+          0.16408690810203552
+        ]
+      ]
+    },
+    "RandomForest_undersample": {
+      "top_features": [
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ],
+        [
+          "Index(['0', '1'], dtype='object')",
+          0.002450373420368237
+        ]
+      ]
+    }
+  },
+  "train_samples": 1253,
+  "test_samples": 314,
+  "defect_rate_train": 0.06624102154828412,
+  "defect_rate_test": 0.06687898089171974
+}
