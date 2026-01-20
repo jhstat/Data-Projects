@@ -10,6 +10,289 @@ This repository contains data science projects focusing on:
 - Feature engineering and selection
 - Model evaluation and interpretation
 
+## Pre-Analysis: The ANALYSIS_PLAN.md Requirement
+
+**CRITICAL: Do NOT write analysis code until a written plan is approved by the user.**
+
+### Why Plans Matter
+
+Data analysis involves hundreds of micro-decisions that compound. Without explicit planning:
+- Assumptions go unchallenged
+- Alternatives go unexplored
+- Methodological errors get baked in
+- Results become harder to interpret or reproduce
+
+### Workflow
+
+1. **User supplies or requests a plan** — Either provide an existing plan or ask Claude to draft one
+2. **Claude drafts `ANALYSIS_PLAN.md`** — Comprehensive, end-to-end, zero ambiguity
+3. **Discussion phase** — Weigh pros/cons of alternatives at critical decision points
+4. **User approves** — Explicit "OK" or "Approved" before any analysis code runs
+5. **Mark the plan** — Add approval timestamp and proceed
+
+### What "Zero Ambiguity" Means
+
+The plan must be detailed enough that **anyone with the manual can execute it without asking questions**. Every decision must be explicit:
+
+| Level | Bad Example | Good Example |
+|-------|-------------|--------------|
+| Model choice | "Run XGBoost" | "XGBoost with `tree_method='hist'`, `objective='binary:logistic'`" |
+| Hyperparameters | "Tune the usual params" | "`max_depth`: [3, 5, 7], `learning_rate`: [0.01, 0.05, 0.1], `min_child_weight`: [1, 5, 10]" |
+| Data split | "Use cross-validation" | "5-fold stratified CV, `shuffle=True`, `random_state=42`; 80/20 train-test split first" |
+| Preprocessing | "Handle missing values" | "Median imputation via `SimpleImputer`; fit on train fold only, transform both" |
+| Threshold | "Optimize threshold" | "Maximize Recall @ Precision ≥ 0.2 on OOF predictions; fix threshold for test" |
+
+### ANALYSIS_PLAN.md Template
+
+```markdown
+# Analysis Plan: [Project Name]
+
+**Status:** 🔴 DRAFT | 🟡 UNDER REVIEW | 🟢 APPROVED
+**Approved by:** [User name/initials]
+**Approval date:** [Date]
+
+---
+
+## 1. Problem Definition
+
+**Objective:** [What are we predicting/analyzing?]
+**Success criteria:** [What metric matters? What's "good enough"?]
+**Constraints:** [Time, compute, interpretability requirements]
+
+---
+
+## 2. Data Overview
+
+**Source:** [Where does the data come from?]
+**Size:** [Rows, columns, file size]
+**Target variable:** [Name, type, distribution]
+**Known issues:** [Missing data, class imbalance, leakage risks]
+
+---
+
+## 3. Train-Test Split Strategy
+
+**Method:** [Random, temporal, stratified]
+**Ratios:** [e.g., 80/20 train/test]
+**Stratification:** [On which variable?]
+**Random seed:** [e.g., 42]
+
+**Rationale:** [Why this split strategy?]
+**Alternative considered:** [What else could we do?]
+
+---
+
+## 4. Feature Engineering
+
+### 4.1 Missing Value Handling
+| Condition | Action | Rationale |
+|-----------|--------|-----------|
+| ≥X% missing | Drop column | Insufficient data for imputation |
+| Y-X% missing | Create indicator + impute | Missingness may be informative |
+| <Y% missing | Impute only | Standard handling |
+
+**Imputation method:** [Mean/median/mode/KNN/etc.]
+**Fit on:** [Train only — NEVER validation/test]
+
+### 4.2 Feature Removal
+- **Constant/near-constant:** [Threshold, e.g., >99% single value]
+- **High correlation:** [Threshold, e.g., |r| > 0.95; tiebreaker rule]
+- **Low variance:** [Threshold if applicable]
+
+### 4.3 Feature Transformations
+- **Scaling:** [StandardScaler/MinMaxScaler/None]
+- **Encoding:** [For categoricals if any]
+- **New features:** [Interactions, polynomials, domain-specific]
+
+---
+
+## 5. Class Imbalance Strategy
+
+**Imbalance ratio:** [e.g., 1:14]
+
+**Strategies to test:**
+| Strategy | Configuration | Rationale |
+|----------|---------------|-----------|
+| Class weights | `class_weight='balanced'` | Baseline, no data manipulation |
+| Undersampling | `RandomUnderSampler`, target ratio 1:3 | Reduces majority class |
+| SMOTE-Tomek | `k_neighbors=3`, `sampling_strategy=0.33` | Synthetic oversampling + cleaning |
+| SMOTE-ENN | `k_neighbors=3`, `kind_sel='all'` | More aggressive cleaning |
+
+**Apply resampling:** [Train folds only — NEVER validation/test]
+
+---
+
+## 6. Model Selection
+
+### 6.1 Models to Test
+| Model | Base Configuration | Why Include |
+|-------|-------------------|-------------|
+| LogisticRegression | `solver='saga'`, `penalty='elasticnet'`, `max_iter=1000` | Linear baseline |
+| LightGBM | `verbose=-1`, `n_jobs=-1` | Fast, leaf-wise boosting |
+| XGBoost | `eval_metric='logloss'`, `n_jobs=-1` | Level-wise boosting comparison |
+| RandomForest | `n_jobs=-1` | Bagging baseline |
+
+### 6.2 Hyperparameter Grids
+
+**LightGBM:**
+```python
+{
+    'num_leaves': [15, 31],
+    'min_data_in_leaf': [10, 20],
+    'learning_rate': [0.05, 0.1]
+}
+```
+**Rationale:** Conservative complexity for small positive class (~80 samples)
+
+**XGBoost:**
+```python
+{
+    'max_depth': [3, 5],
+    'min_child_weight': [1, 5],
+    'learning_rate': [0.05, 0.1]
+}
+```
+
+**RandomForest:**
+```python
+{
+    'n_estimators': [100, 200],
+    'max_depth': [5, 10],
+    'min_samples_leaf': [5, 10]
+}
+```
+
+**LogisticRegression:**
+```python
+{
+    'C': [0.01, 0.1, 1.0],
+    'l1_ratio': [0.3, 0.5, 0.7]
+}
+```
+
+---
+
+## 7. Cross-Validation Strategy
+
+**Method:** Stratified K-Fold
+**Folds:** 5
+**Shuffle:** True
+**Random seed:** 42
+
+**What happens in each fold:**
+1. Split into train/validation
+2. Apply resampling to train only (if applicable)
+3. Fit imputer/scaler on train, transform both
+4. Fit model on train
+5. Predict probabilities on validation
+6. Collect OOF predictions
+
+---
+
+## 8. Evaluation Metrics
+
+**Primary metric:** [e.g., Recall @ Precision ≥ 0.2]
+**Secondary metrics:** F1, PR-AUC, Recall, Precision
+
+**Threshold selection:**
+- Method: [e.g., find threshold maximizing recall where precision ≥ 0.2]
+- Fallback: [e.g., if no threshold achieves precision ≥ 0.2, use max-F1 threshold]
+- Apply to: OOF predictions during CV
+- Fix for test: YES — no re-optimization on test data
+
+---
+
+## 9. Test Set Evaluation
+
+**Process:**
+1. Retrain best model on full training set
+2. Apply preprocessing (fit on full train)
+3. Apply fixed threshold from CV
+4. Report metrics with confidence context (note: N=21 positives → high variance)
+
+---
+
+## 10. Interpretability
+
+**Methods:**
+- SHAP TreeExplainer for tree-based models
+- Global: feature importance bar plot
+- Local: waterfall plots for selected predictions
+
+**Analyses:**
+- Compare feature importance across models
+- Identify disagreement between models
+- Characterize false negatives vs true positives
+
+---
+
+## 11. Deliverables
+
+| Deliverable | Format | Location |
+|-------------|--------|----------|
+| Analysis notebook | `.ipynb` | `DATA_ANALYSIS.ipynb` |
+| Technical report | `.md` | `TECHNICAL_REPORT.md` |
+| Project notes | `.md` | `PROJECT_NOTES.md` |
+| Trained models | `.pkl` | `outputs/models/` |
+| Results summary | `.csv` | `outputs/results/` |
+
+---
+
+## 12. Known Risks and Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| Small positive class (N=83) | Conservative hyperparameters, wide confidence intervals |
+| High dimensionality (590 features) | Aggressive correlation removal, regularization |
+| Threshold overfitting | Fix threshold from CV, don't re-optimize on test |
+| SMOTE distribution shift | Compare with class weights (no data manipulation) |
+
+---
+
+## 13. Decision Log
+
+| Decision Point | Options Considered | Choice | Rationale |
+|----------------|-------------------|--------|-----------|
+| Train-test split | Random vs temporal | Random stratified | No timestamps; preserve class ratio |
+| Imputation | Mean vs median vs KNN | Median | Robust to outliers in sensor data |
+| Correlation threshold | 0.90 vs 0.95 vs 0.99 | 0.95 | Balance redundancy removal vs info loss |
+| SMOTE k_neighbors | 3 vs 5 | 3 | Conservative for small positive class |
+
+---
+
+## Approval
+
+- [ ] Plan reviewed by user
+- [ ] Alternatives discussed at critical decision points
+- [ ] Data handling verified (no leakage risks)
+- [ ] Ready to proceed
+
+**User approval:** _______________
+**Date:** _______________
+```
+
+### Discussion Checklist
+
+Before approval, ensure these are discussed:
+
+**Data handling:**
+- [ ] Is train-test split done BEFORE any feature engineering?
+- [ ] Is preprocessing fit on train only?
+- [ ] Is resampling applied to train folds only?
+- [ ] Is threshold fixed from CV (not re-optimized on test)?
+
+**Methodological choices:**
+- [ ] Are hyperparameter ranges justified for this dataset size?
+- [ ] Are there simpler baselines to compare against?
+- [ ] What's the fallback if primary metric can't be achieved?
+
+**Alternatives:**
+- [ ] Did we consider at least 2 options at each critical decision?
+- [ ] Are pros/cons of alternatives documented?
+- [ ] Is the rationale for final choice clear?
+
+---
+
 ## Core Principles
 
 ### 1. Observe, Hypothesize, Verify
@@ -29,17 +312,58 @@ This repository contains data science projects focusing on:
 - Does the pattern hold across different subsets?
 - Are there confounding factors we haven't considered?
 
-### 2. Curiosity-Driven Exploration
+### 2. Curiosity-Driven Exploration (THINK HARD)
 
-- **Look for interesting patterns** beyond the primary objective
-- **Generate options** for users to explore further
-- **Flag anomalies** that might reveal deeper insights
-- **Ask probing questions** that lead to better understanding
+**This is critical.** Don't just report results—actively hunt for insights. Spend extra effort examining model fitting results, comparisons, and interpretations from multiple angles.
 
-Examples of curiosity-driven findings:
-- "Model A and B have similar accuracy, but they disagree on 30% of predictions—why?"
-- "This feature is important globally but irrelevant for the hardest cases—what does that mean?"
-- "Performance improved after removing a feature—could it have been causing leakage?"
+#### Angles to Examine Model Results
+
+**Performance comparisons:**
+- Which models agree/disagree on predictions? What characterizes the disagreement cases?
+- Did rankings shift between CV and test? What does that reveal about overfitting or distribution shift?
+- Are there models that excel on easy cases but fail on hard ones (or vice versa)?
+- Do ensemble components capture different signals, or are they redundant?
+
+**Feature importance:**
+- Do different models identify the same important features? If not, why?
+- Are important features correlated with each other? Could one be a proxy for another?
+- Does feature importance change across subgroups (e.g., easy vs hard cases)?
+- Are any "important" features suspiciously perfect (potential leakage)?
+
+**Error analysis:**
+- What do false positives have in common? False negatives?
+- Are errors random or systematic (clustered in feature space)?
+- Do certain models make complementary errors (good for ensembling)?
+- Are there "hard" cases that ALL models miss? What makes them hard?
+
+**Calibration and thresholds:**
+- How do probability distributions differ across models?
+- Is the optimal threshold stable across CV folds, or does it vary wildly?
+- Would a different threshold serve business needs better?
+
+**Unexpected findings:**
+- Did a "worse" method outperform expectations? Why might that be?
+- Did adding complexity (features, hyperparameters) hurt performance?
+- Are there counterintuitive patterns that challenge assumptions?
+
+#### Probing Questions to Always Ask
+
+After every major result, ask:
+1. **"What's surprising here?"** — If nothing surprises you, you haven't looked hard enough
+2. **"What would change my conclusion?"** — Identify the assumptions your interpretation depends on
+3. **"Who would disagree, and why?"** — Steel-man alternative explanations
+4. **"What's missing from this picture?"** — What data or analysis would strengthen the conclusion?
+5. **"So what?"** — Connect findings to actionable decisions or deeper understanding
+
+#### Examples of Curiosity-Driven Findings
+
+- "Model A and B have similar accuracy, but they disagree on 30% of predictions—why? The disagreement cases cluster near the decision boundary and have higher missingness rates."
+- "This feature is important globally but irrelevant for the hardest cases—suggesting the hard cases represent a different failure mode not captured by this sensor."
+- "Performance improved after removing a feature—investigating further, this feature had future information leakage through timestamp encoding."
+- "SMOTE-Tomek won CV but lost on test. The rank shift suggests SMOTE created synthetic samples that matched CV validation patterns but not real-world test patterns."
+- "Random Forest had the best PR-AUC but worst F1—its probability compression made threshold optimization ineffective."
+
+**Bottom line:** Treat every result as a mystery to be solved, not a box to be checked.
 
 ### 3. Dual Foundations: Theory + Data
 
@@ -294,6 +618,7 @@ Each data project should follow a consistent folder structure:
 
 ```
 Project_Name/
+├── ANALYSIS_PLAN.md         # Approved plan before coding (required)
 ├── DATA_ANALYSIS.ipynb      # Main analysis notebook (required)
 ├── TECHNICAL_REPORT.md      # Comprehensive methodology & results (required)
 ├── PROJECT_NOTES.md         # Lessons learned & future ideas (required)
@@ -312,6 +637,7 @@ Project_Name/
 
 | File | Purpose |
 |------|---------|
+| `ANALYSIS_PLAN.md` | Approved plan with all decisions documented; must have user sign-off |
 | `DATA_ANALYSIS.ipynb` | Main notebook with all analysis code, clearly sectioned |
 | `TECHNICAL_REPORT.md` | Detailed methodology, parameter choices, results, discussion |
 | `PROJECT_NOTES.md` | Key lessons, knowledge tidbits, future exploration ideas |

@@ -516,11 +516,27 @@ The best model (LightGBM) achieves **2.7× improvement over the "always predict 
 - Multiple random train/test splits
 - Bootstrap confidence intervals
 
-### 5.7 Rank Shifts from CV to Test: A Deep Dive
+### 5.7 What's Surprising Here?
+
+Before diving into detailed analysis, let's surface the findings that challenge expectations:
+
+1. **The "robust" model lost**: Random Forest is textbook "less prone to overfitting" due to bagging, yet it underperformed boosting on test data. The theory says RF reduces variance—but for imbalanced data, variance reduction can average away the minority signal.
+
+2. **Simplest approach won**: Class weights (no data manipulation) beat sophisticated SMOTE variants. We added complexity expecting improvement; we got the opposite.
+
+3. **CV champion became test also-ran**: LightGBM + SMOTE-Tomek ranked #1 in CV, #4 in test. This 3-position drop reveals that SMOTE's synthetic samples matched CV validation patterns but not real test patterns.
+
+4. **PR-AUC ≈ equal, but precision differs by 15pp**: LightGBM and XGBoost had nearly identical ranking quality (0.215 vs 0.214 PR-AUC) yet wildly different precision (40% vs 25%). The threshold, not the ranking, made the difference.
+
+5. **40% of defects are "invisible"**: No model configuration detected them. These defects have normal-looking sensor readings—the signal isn't in the data, no matter how good the algorithm.
+
+These surprises drive the detailed analysis below.
+
+### 5.8 Rank Shifts from CV to Test: A Deep Dive
 
 One of the most revealing aspects of this analysis is how model rankings changed between cross-validation and test evaluation. These shifts expose overfitting patterns, generalization capabilities, and the true value of different modeling strategies.
 
-#### 5.7.1 Overall Rank Comparison
+#### 5.8.1 Overall Rank Comparison
 
 | Configuration | CV Rank (by Recall@Prec≥0.2) | Test Rank (by F1) | Rank Change |
 |---------------|------------------------------|-------------------|-------------|
@@ -537,7 +553,7 @@ One of the most revealing aspects of this analysis is how model rankings changed
 
 **Key Pattern:** The biggest winner (LightGBM + None) jumped 8 positions from CV to test, while configurations that looked promising in CV (especially those with SMOTE-ENN) collapsed on the test set.
 
-#### 5.7.2 The LightGBM + SMOTE-Tomek Paradox
+#### 5.8.2 The LightGBM + SMOTE-Tomek Paradox
 
 LightGBM + SMOTE-Tomek was the CV champion with Recall@Prec≥0.2 = 0.349, but dropped to 4th place on the test set. What happened?
 
@@ -555,7 +571,7 @@ LightGBM + SMOTE-Tomek was the CV champion with Recall@Prec≥0.2 = 0.349, but d
 
 **Business interpretation:** If your cost function heavily penalizes missed defects, SMOTE-Tomek may still be the better choice despite lower F1.
 
-#### 5.7.3 Random Forest: Strong in CV, Weak in Test
+#### 5.8.3 Random Forest: Strong in CV, Weak in Test
 
 Random Forest occupied positions 4, 5, 6 in CV rankings but dropped significantly in test:
 
@@ -590,7 +606,7 @@ Random Forest occupied positions 4, 5, 6 in CV rankings but dropped significantl
 - Semiconductor defects may have **sharp decision boundaries** (specific sensor thresholds) rather than smooth gradients—favoring boosting's ability to build precise splits
 - The **feature redundancy** (many correlated sensors) may help boosting more than bagging, as boosting can ignore redundant features while RF keeps sampling them
 
-#### 5.7.4 LightGBM vs XGBoost: Subtle Differences Explained
+#### 5.8.4 LightGBM vs XGBoost: Subtle Differences Explained
 
 These two gradient boosting implementations are conceptually similar but differ in key algorithmic choices:
 
@@ -643,7 +659,7 @@ LightGBM + SMOTE-ENN achieved F1 = 0.000 on test (zero positive predictions), wh
 - Larger datasets where level-wise growth captures more structure
 - When you need more explicit regularization control (gamma, tree complexity penalty)
 
-#### 5.7.5 Class Imbalance Strategies: Why Did Rankings Shift?
+#### 5.8.5 Class Imbalance Strategies: Why Did Rankings Shift?
 
 **CV Rankings by Resampling Strategy (best model for each):**
 
@@ -699,7 +715,7 @@ Undersampling to 1:3 ratio is a moderate approach:
 
 The consistent middle-of-the-pack performance suggests undersampling is "safe but suboptimal"—it doesn't hurt much, but class weights capture the same effect without data loss.
 
-#### 5.7.6 Summary: What the Rank Shifts Teach Us
+#### 5.8.6 Summary: What the Rank Shifts Teach Us
 
 | Lesson | Evidence | Practical Implication |
 |--------|----------|----------------------|
@@ -1290,6 +1306,91 @@ For deeper learning, consider these questions that don't have single "right" ans
 ---
 
 *These questions are designed for self-assessment and team discussion. Revisit them after implementing changes to see how your understanding evolves.*
+
+---
+
+## 11. Key Lessons from This Analysis
+
+This section distills the most important insights from the analysis into actionable takeaways.
+
+### Lesson 1: Class Weights Beat SMOTE for Small Minority Classes
+
+- **What we observed**: LightGBM + None (class weights) ranked #9 in CV but jumped to #1 on test; LightGBM + SMOTE-Tomek ranked #1 in CV but dropped to #4 on test.
+- **Why it happened**: SMOTE creates synthetic samples by interpolation, which can introduce patterns that exist in CV validation folds (same distribution as training) but not in true held-out test data. Class weights modify the loss function without changing the data distribution, so the model learns only from real examples.
+- **Practical takeaway**: Start with `class_weight='balanced'` or `scale_pos_weight` before trying resampling methods. Simpler approaches often generalize better.
+
+### Lesson 2: CV Rankings Don't Guarantee Test Performance
+
+- **What we observed**: 8 of 16 configurations changed rank by 3+ positions between CV and test. The biggest winner jumped 8 spots; the biggest loser dropped 8 spots.
+- **Why it happened**: CV validation folds share the same distribution as training data. Techniques that modify training distribution (SMOTE) or aggressively clean boundaries (ENN) can optimize for CV patterns that don't exist in the true test distribution.
+- **Practical takeaway**: Always evaluate on held-out test data. Treat CV performance as a noisy estimate, especially with small positive classes (<100 samples).
+
+### Lesson 3: Boosting Beats Bagging for Imbalanced Classification
+
+- **What we observed**: LightGBM and XGBoost dominated the test leaderboard; Random Forest, despite being "more robust," underperformed despite having the best PR-AUC (0.244).
+- **Why it happened**: (1) Boosting's sequential correction explicitly focuses on misclassified samples, often the minority class. (2) RF probabilities compress toward 0.5 due to vote averaging, making threshold optimization less effective. (3) Boosting naturally concentrates on informative features; RF dilutes importance across random subsets.
+- **Practical takeaway**: For rare event prediction, prefer gradient boosting (LightGBM, XGBoost) over Random Forest. RF's "robustness" comes from variance reduction, which can average away weak minority class signals.
+
+### Lesson 4: Aggressive Boundary Cleaning Hurts More Than It Helps
+
+- **What we observed**: SMOTE-ENN performed worst across all resampling strategies on both CV and test. LightGBM + SMOTE-ENN achieved F1 = 0.000 on test (zero positive predictions).
+- **Why it happened**: ENN removes samples whose neighbors disagree with their class—including minority samples that "look like" majority samples. These borderline cases are exactly the hard examples the model needs to learn. A "clean" training set produces overconfident models that fail on messy real-world data.
+- **Practical takeaway**: Avoid aggressive cleaning (ENN) with small minority classes. If cleaning is needed, use Tomek Links (removes only direct Tomek pairs).
+
+### Lesson 5: Not All Defects Are Detectable with Current Features
+
+- **What we observed**: ~40% of test defects were missed by ALL 16 model configurations. These "hard" defects had normal-looking sensor readings on all key features.
+- **Why it happened**: The signal simply isn't in the available features. Hard defects may arise from different failure modes, temporal misalignment (sensor snapshot misses transient events), or unmeasured process parameters.
+- **Practical takeaway**: There's a ceiling on ML improvement with current data. Detecting hard defects requires new sensors or different data sources, not better algorithms. Collaborate with process engineers to identify sensor gaps.
+
+### Lesson 6: Threshold Selection Matters as Much as Model Selection
+
+- **What we observed**: LightGBM achieved 40% precision vs XGBoost's 25% despite nearly identical PR-AUC (0.215 vs 0.214). The difference came from threshold selection (0.090 vs 0.137).
+- **Why it happened**: PR-AUC measures ranking quality across all thresholds, but operational performance depends on the specific threshold chosen. Different models produce different probability distributions, requiring different optimal cut points.
+- **Practical takeaway**: Optimize threshold during CV, fix for test, and tune based on business costs. Don't assume similar PR-AUC means similar operational performance.
+
+---
+
+## 12. Next Steps for Stakeholders
+
+### For Manufacturing Managers
+
+- [ ] **Review cost trade-offs**: Current model catches 30% of defects at 40% precision. Determine if this operating point matches business needs, or if higher recall (more false alarms) is preferred.
+- [ ] **Evaluate deployment scope**: Consider piloting on one production line before full rollout.
+- [ ] **Set performance monitoring KPIs**: Track model precision/recall monthly; trigger review if F1 drops below 0.25.
+
+### For Quality Engineers
+
+- [ ] **Implement sensor alerts**: Set threshold alerts for Sensors 103, 33, 59 when readings exceed 2σ from baseline.
+- [ ] **Investigate missed defects**: Pull physical samples from the ~40% of test defects missed by all models. Conduct root cause analysis—what do they have in common?
+- [ ] **Validate sensor meanings**: Provide documentation on what Sensors 103, 33, 59, 31, 205 actually measure. This enables domain-informed feature engineering.
+
+### For Process Engineers
+
+- [ ] **Sensor gap analysis**: Review process flow to identify unmeasured parameters that could explain hard defects (e.g., upstream temperature, chemical timing, vibration).
+- [ ] **Temporal sampling review**: Are sensors sampled frequently enough to catch transient events? Consider higher sampling frequency at critical process steps.
+- [ ] **Failure mode clustering**: Are the missed defects a distinct failure type (e.g., contamination vs equipment drift)? If so, they may need separate detection approaches.
+
+### For Data Scientists
+
+- [ ] **Explore interaction features**: Add explicit feature interactions (e.g., Sensor103 × Sensor33) to capture nonlinear patterns.
+- [ ] **Bootstrap confidence intervals**: Quantify uncertainty in test metrics given only 21 positives.
+- [ ] **Calibration analysis**: Plot reliability diagrams for LightGBM vs RF to visualize probability compression.
+- [ ] **Ensemble experiment**: Try stacking LightGBM + XGBoost predictions—they may capture complementary patterns.
+
+---
+
+## 13. Inputs That Would Improve This Analysis
+
+| Input Needed | Who Can Provide | How It Helps |
+|--------------|-----------------|--------------|
+| Sensor documentation (what do Sensors 103, 33, 59, 31, 205 measure?) | Process Engineers | Enables domain-informed feature engineering; allows physical interpretation of SHAP results |
+| Root cause analysis of "hard" defects (missed by all models) | Quality Engineers | Identifies whether hard defects are a distinct failure mode requiring different data |
+| Cost ratio of missed defect vs false alarm | Manufacturing Managers | Allows optimization of threshold for business value, not just F1 |
+| Timestamps for temporal validation | Data Engineering | Enables time-based train/test split that simulates production deployment |
+| Upstream process parameters | Process Engineers | May capture root causes not reflected in downstream sensors |
+| Historical defect categorization (types/causes) | Quality Team | Enables stratified analysis and specialized models per defect type |
+| Production line/equipment IDs | Process Engineers | Allows analysis of equipment-specific patterns and model calibration |
 
 ---
 
